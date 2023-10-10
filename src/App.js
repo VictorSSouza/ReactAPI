@@ -13,8 +13,10 @@ function App() {
   const baseUrl = "https://localhost:44336/api/Category";
   
   const [data, setData]=useState([]);
+  const [updateData, setUpdateData] = useState(true);
   const [modalInsert, setModalInsert] = useState(false);
   const [modalEdit, setModalEdit] = useState(false);
+  const [modalDelete, setModalDelete] = useState(false);
 
   const [categorySelected, setCategorySelected] =useState({
     id: '',
@@ -24,8 +26,8 @@ function App() {
 
   const categorySelect = (category, option)=>{
     setCategorySelected(category);
-      (option === "Editar") &&
-      openCloseModalEdit();
+      (option === "Editar") ?
+      openCloseModalEdit() : openCloseModalDelete();
   }
 
   const openCloseModalInsert=()=>{
@@ -34,6 +36,10 @@ function App() {
 
   const openCloseModalEdit=()=>{
     setModalEdit(!modalEdit);
+  }
+
+  const openCloseModalDelete=()=>{
+    setModalDelete(!modalDelete);
   }
 
   const handleChange = e=>{
@@ -58,6 +64,7 @@ function App() {
       await axios.post(baseUrl, categorySelected)
       .then(response=>{
         setData(data.concat(response.data));
+        setUpdateData(true);
         openCloseModalInsert();
       }).catch(error=>{
         console.log(error);
@@ -75,15 +82,31 @@ function App() {
           category.imageUrl = reply.imageUrl;
         }
       });
+      setUpdateData(true);
       openCloseModalEdit();
     }).catch(error=>{
       console.log(error);
     })
   }
 
+  const requestDelete = async()=>{
+    await axios.delete(baseUrl+"/"+categorySelected.id)
+    .then(response=>{
+      setData(data.filter(category => category.id !== response.data));
+      setUpdateData(true);
+      openCloseModalDelete();
+    }).catch(error=>{
+      console.log(error);
+    })
+  }
+
   useEffect(()=>{
-    requestGet();
-  })
+    if(updateData){
+      requestGet();
+      setUpdateData(false);
+    }
+    
+  },[updateData])
 
   return (
     <div className="category-container">
@@ -156,6 +179,17 @@ function App() {
         <ModalFooter>
           <button className="btn btn-primary" onClick={()=>requestPut()}>Editar</button>{" "}
           <button className="btn btn-danger" onClick={()=>openCloseModalEdit()}>Cancelar</button>
+        </ModalFooter>
+      </Modal>
+
+      {/* Excluir Categoria */}
+      <Modal isOpen={modalDelete}>
+        <ModalBody>
+          Confirma a <strong>exclusão</strong> desta categoria: {categorySelected && categorySelected.name}
+        </ModalBody>
+        <ModalFooter>
+          <button className="btn btn-primary" onClick={()=>requestDelete()}>Sim </button>
+          <button className="btn btn-danger" onClick={()=>openCloseModalDelete()}>Não </button>
         </ModalFooter>
       </Modal>
     </div>
